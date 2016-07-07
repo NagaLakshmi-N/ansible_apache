@@ -27,9 +27,12 @@ Example Playbook
 
 Including an example of playbook yaml to execute this role
 - name: Install and Configure Mysql
+
   hosts: all
+  
   vars_files:
     - defaults/main.yml
+
   tasks:
     - include: tasks/main.yml
 
