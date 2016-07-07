@@ -1,8 +1,3 @@
-[![Build Status](https://travis-ci.org/weldpua2008/ansible-apache.svg?branch=master)](https://travis-ci.org/weldpua2008/ansible-apache)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/weldpua2008/ansible-apache/master/LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/weldpua2008/ansible-apache.svg)](https://github.com/weldpua2008/ansible-apache/issues)
-[![GitHub forks](https://img.shields.io/github/forks/weldpua2008/ansible-apache.svg)](https://github.com/weldpua2008/ansible-apache/network)
-[![GitHub stars](https://img.shields.io/github/stars/weldpua2008/ansible-apache.svg)](https://github.com/weldpua2008/ansible-apache/stargazers)
 Role Name
 ========
 Ansible apache
@@ -30,11 +25,13 @@ A list of other roles hosted on Galaxy should go here, plus any details in regar
 Example Playbook
 -------------------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
-      roles:
-         - { role: weldpua2008.ansible-apache, apache_listen_ports: [80, 443] }
+Including an example of playbook yaml to execute this role
+- name: Install and Configure Mysql
+  hosts: all
+  vars_files:
+    - defaults/main.yml
+  tasks:
+    - include: tasks/main.yml
 
 License
 -------
@@ -44,4 +41,4 @@ MIT
 Author Information
 ------------------
 
-Valeriy Solovyov
+NagaLakshmi
