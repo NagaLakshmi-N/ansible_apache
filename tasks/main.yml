@@ -1,0 +1,192 @@
+---
+# tasks file for ansible-nginx
+- name: Include default variables.
+  include_vars: defaults/main.yml
+  tags:
+    - apache
+
+- name: Include OS-specific variables.
+  include_vars: "{{ ansible_os_family }}.yml"
+  tags:
+    - apache
+
+- include: install-debian.yml
+  when: "ansible_os_family == 'Debian'"
+  tags:
+    - apache
+
+- include: install-centos.yml
+  when: "ansible_os_family == 'RedHat' and ansible_distribution != 'Fedora'"
+  tags:
+    - apache
+
+- include: install-fedora.yml
+  when: "ansible_os_family == 'RedHat' and ansible_distribution == 'Fedora'"
+  tags:
+    - apache
+
+
+- name: Get installed version of Apache.
+  shell: "{{ apache_daemon }} -v"
+  changed_when: false
+  always_run: yes
+  register: _apache_version
+  tags:
+    - apache
+
+- name: Create apache_version variable.
+  set_fact:
+    apache_version: "{{ _apache_version.stdout.split()[2].split('/')[1] }}"
+  tags:
+    - apache
+
+- name: Create apache_version variable.
+  set_fact:
+    apache_version_slim: "{{apache_version.split('.')[0]}}.{{apache_version.split('.')[1]}}"
+  tags:
+    - apache
+
+- name: Include apache specific vars
+  include_vars: apache-{{ apache_version_slim }}.yml
+  tags:
+    - apache
+
+- name: Disable Apache mods.
+  file:
+    path: "{{ apache_server_root }}/mods-enabled/{{ item }}"
+    state: absent
+  with_items: apache_mods_disabled
+  notify: restart apache
+  tags:
+    - apache
+
+- name: Enable Apache modules
+  become : True
+  apache2_module :
+    name  : "{{ item }}"
+    state : present
+  with_items: "{{ apache_mods_enabled }}"
+  notify: restart apache
+  tags:
+    - apache
+
+- name: Remove default vhost in sites-enabled.
+  file:
+    path: "{{item}}"
+    state: absent
+  notify: restart apache
+  when: apache_remove_default_vhost|bool
+  changed_when: false
+  with_fileglob:
+    - "{{ apache_default_vhost_filename }}*"
+  tags:
+    - apache
+
+- name: copy apache default conf
+  template: src=ports.conf.j2 dest={{ apache_server_root }}/ports.conf
+  notify: restart apache
+  tags:
+    - apache
+
+
+- name:  Create directories for sites available/enabled.
+  file:
+    path: "{{ item }}"
+    state: directory
+  changed_when: false
+  with_items:
+    - "{{apache_sites_available_path}}"
+    - "{{apache_sites_enabled_path}}"
+
+  tags:
+    - apache
+
+- name:  Create documentroot of sites
+  file:
+    path: "{{  item.document_root }}"
+    state: directory
+  changed_when: false
+  when: item.document_root is defined
+  with_items: apache_vhosts
+  tags:
+    - apache
+
+- name:  Create index.html
+  template:
+    src: "index.html.j2"
+    dest: "{{  item.document_root }}/index.html"
+    mode: 0444
+  changed_when: false
+  when: item.document_root is defined and item.create_index is defined and item.create_index|bool
+  with_items: apache_vhosts
+  tags:
+    - apache
+
+
+
+
+- name: Add apache vhosts configuration.
+  template:
+    src: "vhosts-{{ apache_version_slim }}.conf.j2"
+    dest: "{{ apache_default_vhost_filename }}"
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart apache
+  when: apache_create_vhosts
+  changed_when: false
+  tags:
+    - apache
+
+
+# AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.17.0.13.
+# Set the 'ServerName' directive globally to suppress this message
+- name: Fixing AH00558
+  lineinfile:
+    dest={{apache_conf_path}}
+    regexp="^ServerName localhost"
+    line="ServerName localhost"
+    state=present
+  notify: restart apache
+  #when: apache_version_slim == '2.4'
+  tags:
+    - apache
+
+- debug: msg="{{apache_use_service}} {{apache_use_service|bool}} "
+  tags:
+    - apache
+
+- debug: msg="{{apache_use_service}} {{apache_use_service|bool}} "
+  when: apache_use_service|bool
+  tags:
+    - apache
+
+
+
+- name: Configure Apache to  include sites-enabled.
+  lineinfile:
+    dest={{apache_conf_path}}
+    regexp="^Include sites-enabled"
+    line="Include sites-enabled/*"
+    state=present
+  notify: restart apache
+  tags:
+    - apache
+
+#
+#- include_vars: apache-22.yml
+#  when: "apache_version.split('.')[1] == '2'"
+#
+#- include_vars: apache-24.yml
+#  when: "apache_version.split('.')[1] == '4'"
+
+- include: configure-debian.yml
+  when: "ansible_os_family == 'Debian'"
+  tags:
+    - apache
+
+- include: configure-centos.yml
+  when: "ansible_os_family == 'RedHat'"
+  tags:
+    - apache
+

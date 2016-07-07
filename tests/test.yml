@@ -1,0 +1,6 @@
+# test file for ansible-apache
+---
+- hosts: localhost
+  remote_user: root
+  roles:
+    - ansible-apache
