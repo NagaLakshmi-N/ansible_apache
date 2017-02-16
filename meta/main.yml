@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-	author: "NagaLakshmi.N"
+  author: "NagaLakshmi.N"
   company: "CloudEnablers Private Limited"
   description: "Installs and Configures Apache"
   license: MIT
